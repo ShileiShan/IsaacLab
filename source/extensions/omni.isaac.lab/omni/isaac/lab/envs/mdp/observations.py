@@ -38,6 +38,9 @@ def base_lin_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
     """Root linear velocity in the asset's root frame."""
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
+    # print("asset.data.root_state_w", asset.data.root_state_w)
+    # print("asset.data.root_quat_w", asset.data.root_quat_w)
+    # print("asset.data.root_lin_vel_b", asset.data.root_lin_vel_b)
     return asset.data.root_lin_vel_b
 
 
@@ -45,6 +48,7 @@ def base_ang_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
     """Root angular velocity in the asset's root frame."""
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
+    # print("asset.data.root_ang_vel_b", asset.data.root_ang_vel_b)
     return asset.data.root_ang_vel_b
 
 
@@ -52,6 +56,9 @@ def projected_gravity(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEnt
     """Gravity projection on the asset's root frame."""
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
+    # print("asset.data.projected_gravity_b", asset.data.projected_gravity_b)
+    # print("asset.data.root_quat_w", asset.data.root_quat_w)
+    # print("asset.data.GRAVITY_VEC_W", asset.data.GRAVITY_VEC_W)
     return asset.data.projected_gravity_b
 
 
@@ -115,6 +122,10 @@ def joint_pos_rel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityC
     """
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
+    tmp = asset.data.joint_pos[:, asset_cfg.joint_ids] - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
+    # print("joint_pos_rel", tmp)
+    # print("asset.data.joint_pos[:, asset_cfg.joint_ids]", asset.data.joint_pos[:, asset_cfg.joint_ids])
+    # print("asset.data.default_joint_pos[:, asset_cfg.joint_ids]", asset.data.default_joint_pos[:, asset_cfg.joint_ids])
     return asset.data.joint_pos[:, asset_cfg.joint_ids] - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
 
 
@@ -151,6 +162,9 @@ def joint_vel_rel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityC
     """
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
+    tmp = asset.data.joint_vel[:, asset_cfg.joint_ids] - asset.data.default_joint_vel[:, asset_cfg.joint_ids]
+    # print("joint_vel_rel", tmp)
+    # print("asset.data.default_joint_vel[:, asset_cfg.joint_ids]", asset.data.default_joint_vel[:, asset_cfg.joint_ids])
     return asset.data.joint_vel[:, asset_cfg.joint_ids] - asset.data.default_joint_vel[:, asset_cfg.joint_ids]
 
 
@@ -167,6 +181,12 @@ def height_scan(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg, offset: float 
     # extract the used quantities (to enable type-hinting)
     sensor: RayCaster = env.scene.sensors[sensor_cfg.name]
     # height scan: height = sensor_height - hit_point_z - offset
+    # print("sensor.data.pos_w[:, 2]", sensor.data.pos_w[:, 2])
+    # print("sensor.data.ray_hits_w[..., 2]", sensor.data.ray_hits_w[..., 2])
+    # print("len(sensor.data.ray_hits_w[..., 2])", len(sensor.data.ray_hits_w[..., 2][0]))
+    # print("offset", offset)
+    # total = sensor.data.pos_w[:, 2].unsqueeze(1) - sensor.data.ray_hits_w[..., 2] - offset
+    # print("total", total)
     return sensor.data.pos_w[:, 2].unsqueeze(1) - sensor.data.ray_hits_w[..., 2] - offset
 
 
@@ -194,8 +214,10 @@ def last_action(env: ManagerBasedEnv, action_name: str | None = None) -> torch.T
     entire action tensor is returned.
     """
     if action_name is None:
+        # print("last_action", env.action_manager.action)
         return env.action_manager.action
     else:
+        # print("last_action", env.action_manager.get_term(action_name).raw_actions)
         return env.action_manager.get_term(action_name).raw_actions
 
 
@@ -206,4 +228,6 @@ Commands.
 
 def generated_commands(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
     """The generated command from command term in the command manager with the given name."""
-    return env.command_manager.get_command(command_name)
+    command = env.command_manager.get_command(command_name)
+    # print("command", command)
+    return command

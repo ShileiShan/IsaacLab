@@ -69,6 +69,14 @@ class ImplicitActuator(ActuatorBase):
         error_vel = control_action.joint_velocities - joint_vel
         self.computed_effort = self.stiffness * error_pos + self.damping * error_vel + control_action.joint_efforts
         # clip the torques based on the motor limits
+        print("====Actuator====")
+        print("control_action.joint_positions", control_action.joint_positions)
+        print("joint_pos", joint_pos)
+        print("control_action.joint_velocities", control_action.joint_velocities)
+        print("joint_vel", joint_vel)
+        print("self.stiffness", self.stiffness)
+        print("self.damping", self.damping)
+        print("control_action.joint_efforts", control_action.joint_efforts)
         self.applied_effort = self._clip_effort(self.computed_effort)
         return control_action
 

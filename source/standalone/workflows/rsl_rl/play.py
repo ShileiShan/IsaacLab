@@ -57,6 +57,8 @@ def main():
     env_cfg = parse_env_cfg(
         args_cli.task, use_gpu=not args_cli.cpu, num_envs=args_cli.num_envs, use_fabric=not args_cli.disable_fabric
     )
+    print("*********************Start*******************")
+    print("args_cli", args_cli)
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(args_cli.task, args_cli)
 
     # create isaac environment
@@ -88,14 +90,20 @@ def main():
 
     # reset environment
     obs, _ = env.get_observations()
+    print("obs:", obs)
     # simulate environment
+    # 
+    count = 0
     while simulation_app.is_running():
         # run everything in inference mode
         with torch.inference_mode():
             # agent stepping
+            print("====================================")
             actions = policy(obs)
+            print("actions:", actions)
             # env stepping
             obs, _, _, _ = env.step(actions)
+            # print("obs:", obs)
 
     # close the simulator
     env.close()
