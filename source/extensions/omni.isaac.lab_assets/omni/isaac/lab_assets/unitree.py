@@ -175,7 +175,7 @@ UNITREE_GO2_CFG = ArticulationCfg(
     },
 )
 """Configuration of Unitree Go2 using DC-Motor actuator model."""
-
+## print("user")
 
 H1_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(

@@ -114,6 +114,8 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         # note: this order is important since observation manager needs to know the command and action managers
         # and the reward manager needs to know the termination manager
         # -- command manager
+        # print("===================")
+        # print("total progress")
         self.command_manager: CommandManager = CommandManager(self.cfg.commands, self)
         print("[INFO] Command Manager: ", self.command_manager)
         # call the parent class to load the managers for observations and actions.

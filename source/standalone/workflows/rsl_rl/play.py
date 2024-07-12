@@ -90,7 +90,7 @@ def main():
 
     # reset environment
     obs, _ = env.get_observations()
-    print("obs:", obs)
+    # print("obs:", obs)
     # simulate environment
     # 
     count = 0
@@ -98,9 +98,9 @@ def main():
         # run everything in inference mode
         with torch.inference_mode():
             # agent stepping
-            print("====================================")
+            # print("====================================")
             actions = policy(obs)
-            print("actions:", actions)
+            # print("actions:", actions)
             # env stepping
             obs, _, _, _ = env.step(actions)
             # print("obs:", obs)

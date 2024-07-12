@@ -987,7 +987,8 @@ class Articulation(RigidObject):
         usd_effort_limit = self.root_physx_view.get_dof_max_forces().clone()
         usd_velocity_limit = self.root_physx_view.get_dof_max_velocities().clone()
         # iterate over all actuator configurations
-        print("+++++++++++++++++++++++++++++++++++")
+        # print("user")
+        print("=============actuators_cfg================")
         print("self.cfg.actuators.items():", self.cfg.actuators.items())
         for actuator_name, actuator_cfg in self.cfg.actuators.items():
             # type annotation for type checkers
@@ -1101,20 +1102,20 @@ class Articulation(RigidObject):
                 joint_efforts=self._data.joint_effort_target[:, actuator.joint_indices],
                 joint_indices=actuator.joint_indices,
             )
-            # print("=================================")
-            # print("control_action.joint_positions", control_action.joint_positions)
-            # print("control_action.joint_velocities", control_action.joint_velocities)
-            # print("control_action.joint_efforts", control_action.joint_efforts)
-            # print("actuator.joint_indices", actuator.joint_indices)
+            print("=================================")
+            print("control_action.joint_positions", control_action.joint_positions)
+            print("control_action.joint_velocities", control_action.joint_velocities)
+            print("control_action.joint_efforts", control_action.joint_efforts)
+            print("actuator.joint_indices", actuator.joint_indices)
             # compute joint command from the actuator model
             control_action = actuator.compute(
                 control_action,
                 joint_pos=self._data.joint_pos[:, actuator.joint_indices],
                 joint_vel=self._data.joint_vel[:, actuator.joint_indices],
             )
-            # print("control_action.joint_positions", control_action.joint_positions)
-            # print("control_action.joint_velocities", control_action.joint_velocities)
-            # print("control_action.joint_efforts", control_action.joint_efforts)
+            print("control_action.joint_positions", control_action.joint_positions)
+            print("control_action.joint_velocities", control_action.joint_velocities)
+            print("control_action.joint_efforts", control_action.joint_efforts)
             # update targets (these are set into the simulation)
             if control_action.joint_positions is not None:
                 self._joint_pos_target_sim[:, actuator.joint_indices] = control_action.joint_positions
