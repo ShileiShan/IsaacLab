@@ -269,7 +269,27 @@ class TerrainImporter:
         mesh_prim = UsdGeom.Mesh(mesh_prim)
         # store the mesh
         vertices = np.asarray(mesh_prim.GetPointsAttr().Get())
-        faces = np.asarray(mesh_prim.GetFaceVertexIndicesAttr().Get()).reshape(-1, 3)
+        # faces = np.asarray(mesh_prim.GetFaceVertexIndicesAttr().Get()).reshape(-1, 3)
+        faces = np.asarray(mesh_prim.GetFaceVertexIndicesAttr().Get())
+        # print("len(faces)",len(faces))
+        # print("faces",faces)
+        # print("vertices",vertices)
+        # print("==================================")
+        # faces = None
+        # face_vertex_indices = mesh_prim.GetFaceVertexIndicesAttr().Get()
+        # if len(face_vertex_indices) == 3:
+        #     # 处理三角形面
+        #     faces = np.asarray(face_vertex_indices).reshape(-1, 3)
+        # elif len(face_vertex_indices) == 4:
+        #     # 处理四边形面，可以选择将其分割为两个三角形
+        #     # 或者只取前三个顶点作为退化的三角形
+        #     # faces = np.asarray(face_vertex_indices[:3]).reshape(-1, 3)
+        #     # 或者将四边形分割为两个三角形
+        #     faces1 = np.asarray(face_vertex_indices[:3]).reshape(-1, 3)
+        #     faces2 = np.asarray(face_vertex_indices[1:]).reshape(-1, 3)
+        #     faces = np.concatenate([faces1, faces2], axis=0)
+        # else:
+        #     raise ValueError("Unsupported face type with {} vertices".format(len(face_vertex_indices)))
         self.meshes[key] = trimesh.Trimesh(vertices=vertices, faces=faces)
         # create a warp mesh
         device = "cuda" if "cuda" in self.device else "cpu"

@@ -106,8 +106,9 @@ class GroundPlaneCfg(SpawnerCfg):
     """
 
     func: Callable = from_files.spawn_ground_plane
-
+    # print("=====")
     usd_path: str = f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd"
+    # usd_path: str = "omniverse://localhost/Projects/h1.usd"
     """Path to the USD file to spawn asset from. Defaults to the grid-world ground plane."""
 
     color: tuple[float, float, float] | None = (0.0, 0.0, 0.0)

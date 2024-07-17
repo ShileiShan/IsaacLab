@@ -88,6 +88,12 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, RigidObj
     sim_dt = sim.get_physics_dt()
     sim_time = 0.0
     count = 0
+    # import carb.events
+    # import omni.kit.app
+    # MY_CUSTOM_EVENT = carb.events.type_from_string("omni.my.extension.MY_CUSTOM_EVENT")
+    # bus = omni.kit.app.get_app().get_message_bus_event_stream()
+    # def on_event(e):
+    #     print(e.type, e.type == MY_CUSTOM_EVENT, e.payload)
     # Simulate physics
     while simulation_app.is_running():
         # reset
@@ -118,6 +124,9 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, RigidObj
         # update buffers
         cone_object.update(sim_dt)
         # print the root position
+        # sub1 = bus.create_subscription_to_push_by_type(MY_CUSTOM_EVENT, on_event)
+        # sub2 = bus.create_subscription_to_pop_by_type(MY_CUSTOM_EVENT, on_event)
+        # bus.push(MY_CUSTOM_EVENT, payload={"data": 2, "x": "y"})
         if count % 50 == 0:
             print(f"Root position (in world): {cone_object.data.root_state_w[:, :3]}")
 
@@ -136,6 +145,7 @@ def main():
     sim.reset()
     # Now we are ready!
     print("[INFO]: Setup complete...")
+    print("sim.device", sim.device)
     # Run the simulator
     run_simulator(sim, scene_entities, scene_origins)
 
