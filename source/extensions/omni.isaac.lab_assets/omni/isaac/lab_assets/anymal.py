@@ -107,7 +107,9 @@ ANYMAL_C_CFG = ArticulationCfg(
         # collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.02, rest_offset=0.0),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.6),
+        # user conf
+        pos=(0.0, 0.0, 0.7),
+        rot=(0.0, 0.0, 0.0, 1.0),
         joint_pos={
             ".*HAA": 0.0,  # all HAA
             ".*F_HFE": 0.4,  # both front HFE

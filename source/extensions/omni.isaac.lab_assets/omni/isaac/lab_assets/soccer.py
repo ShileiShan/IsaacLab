@@ -15,9 +15,11 @@ from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
 # Configuration
 ##
 
-CARTPOLE_CFG = ArticulationCfg(
+CARTER_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Robots/Classic/Cartpole/cartpole.usd",
+        # omniverse://localhost/NVIDIA/Assets/Isaac/4.0/Isaac/Robots/Carter/carter_v1.usd
+        usd_path=f"omniverse://localhost/Users/carter_v1.usd",
+        # usd_path=f"omniverse://localhost/NVIDIA/Assets/Isaac/4.0/Isaac/Robots/Carter/carter_v1.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,
@@ -34,23 +36,30 @@ CARTPOLE_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 2.0), joint_pos={"slider_to_cart": 0.0, "cart_to_pole": 0.0}
+        pos=(0.0, 0.0, 0.5), joint_pos={"left_wheel": 0.0, "right_wheel": 0.0}
     ),
     actuators={
-        "cart_actuator": ImplicitActuatorCfg(
-            joint_names_expr=["slider_to_cart"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
+        # "left_actuator": ImplicitActuatorCfg(
+        #     joint_names_expr=["left_wheel"],
+        #     effort_limit=400.0,
+        #     velocity_limit=100.0,
+        #     stiffness=0.0,
+        #     damping=10.0,
+        # ),
+        # "right_actuator": ImplicitActuatorCfg(
+        #     joint_names_expr=["right_wheel"], 
+        #     effort_limit=400.0, 
+        #     velocity_limit=100.0, 
+        #     stiffness=0.0, 
+        #     damping=10.0
+        # ),
+        "body": ImplicitActuatorCfg(
+            joint_names_expr=[".*"],
+            effort_limit=100.0, 
+            velocity_limit=10.0, 
             stiffness=0.0,
             damping=10.0,
         ),
-        "pole_actuator": ImplicitActuatorCfg(
-            joint_names_expr=["cart_to_pole"], 
-            effort_limit=400.0, 
-            velocity_limit=100.0, 
-            stiffness=0.0, 
-            damping=0.0
-        ),
     },
 )
-"""Configuration for a simple Cartpole robot."""
+"""Configuration for a simple Carter robot."""
