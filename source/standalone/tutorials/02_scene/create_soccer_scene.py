@@ -75,10 +75,10 @@ class CartpoleSceneCfg(InteractiveSceneCfg):
         init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
-    gate = AssetBaseCfg (
-        prim_path="{ENV_REGEX_NS}/gate",
-        spawn=sim_utils.UsdFileCfg(usd_path=f"omniverse://localhost/Users/gate.usd",)
-    )
+    # gate = AssetBaseCfg (
+    #     prim_path="{ENV_REGEX_NS}/gate",
+    #     spawn=sim_utils.UsdFileCfg(usd_path=f"omniverse://localhost/Users/gate.usd",)
+    # )
 
 
 def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
@@ -95,7 +95,9 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
     # Simulation loop
     while simulation_app.is_running():
         # Reset
+        flag = -1.0
         if count % 1000 == 0:
+            flag = - flag
             # reset counter
             count = 0
             # reset the scene entities
@@ -135,7 +137,8 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         rela_ball_pos = ball_pos - scene.env_origins
         # print("rela_ball_pos",rela_ball_pos)
         robot_vel = robot.data.joint_vel[:, [robot._left_dof_idx[0], robot._right_dof_idx[0]]]
-        efforts = torch.randn_like(robot_vel) * 50.0
+        efforts = torch.ones_like(robot_vel)  * 50.0
+        print("efforts",efforts)
         # print(efforts)
         # -- apply action to the robot
         robot.set_joint_effort_target(efforts, joint_ids=[robot._left_dof_idx[0], robot._right_dof_idx[0]])

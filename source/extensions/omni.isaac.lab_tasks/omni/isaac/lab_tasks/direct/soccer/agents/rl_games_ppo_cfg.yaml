@@ -4,9 +4,9 @@ params:
   # environment wrapper clipping
   env:
     # added to the wrapper
-    clip_observations: 5.0
+    clip_observations: 15.0
     # can make custom wrapper?
-    clip_actions: 1.0
+    clip_actions: 2.0
 
   algo:
     name: a2c_continuous
@@ -30,7 +30,7 @@ params:
           val: 0
         fixed_sigma: True
     mlp:
-      units: [32, 32]
+      units: [128, 128, 64]
       activation: elu
       d2rl: False
 
@@ -43,7 +43,7 @@ params:
   load_path: '' # path to the checkpoint to load
 
   config:
-    name: cartpole_direct
+    name: soccer_direct
     env_name: rlgpu
     device: 'cuda:0'
     device_name: 'cuda:0'
@@ -62,9 +62,9 @@ params:
     lr_schedule: adaptive
     kl_threshold: 0.008
     score_to_win: 20000
-    max_epochs: 150
+    max_epochs: 500
     save_best_after: 50
-    save_frequency: 25
+    save_frequency: 50
     grad_norm: 1.0
     entropy_coef: 0.0
     truncate_grads: True

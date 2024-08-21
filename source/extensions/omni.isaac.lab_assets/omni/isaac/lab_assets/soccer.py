@@ -55,8 +55,8 @@ CARTER_CFG = ArticulationCfg(
         # ),
         "body": ImplicitActuatorCfg(
             joint_names_expr=[".*"],
-            effort_limit=100.0, 
-            velocity_limit=10.0, 
+            effort_limit=1000.0, 
+            velocity_limit=1000.0, 
             stiffness=0.0,
             damping=10.0,
         ),

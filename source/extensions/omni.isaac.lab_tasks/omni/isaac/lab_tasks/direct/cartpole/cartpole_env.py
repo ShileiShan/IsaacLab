@@ -127,7 +127,7 @@ class CartpoleEnv(DirectRLEnv):
         if env_ids is None:
             env_ids = self.cartpole._ALL_INDICES
         super()._reset_idx(env_ids)
-
+        # print("env_ids: ", env_ids)
         joint_pos = self.cartpole.data.default_joint_pos[env_ids]
         joint_pos[:, self._pole_dof_idx] += sample_uniform(
             self.cfg.initial_pole_angle_range[0] * math.pi,
