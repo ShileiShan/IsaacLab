@@ -56,12 +56,12 @@ class SoccerEnvCfg(DirectRLEnvCfg):
         init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
-    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=2048, env_spacing=22.0, replicate_physics=True)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=2048, env_spacing=18.0, replicate_physics=True)
 
     # reset
-    max_ball_pos = [7.0, 6.0]
-    initial_carter_range = [4.0, 4.0]
-    initial_ball_range = [3.0, 4.0]
+    max_ball_pos = [7.0, 7.0]
+    initial_carter_range = [3.0, 4.0]
+    initial_ball_range = [3.0, 2.0]
     # reward scales
     rew_scale_ang_vel_xy = 0.0
     rew_scale_stop = -0.0
@@ -70,10 +70,14 @@ class SoccerEnvCfg(DirectRLEnvCfg):
     rew_scale_vel_dir = 1.0
     rew_scale_speed = 0.0
     # reward scales
-    lin_vel_reward_scale = 10.0
+    lin_vel_reward_scale = 30.0
     # yaw_rate_reward_scale = 0.5
-    heading_reward_scale = 20.0
+    heading_reward_scale = 50.0
     distance_reward_scale = 100.0
+    out_of_bounds_reward_scale = -10.0
+    ball_dis_reward_scale = 1e4
+    ball_heading_reward_scale = 100.0
+    ball_in_gate_reward_scale = 1e6
     z_vel_reward_scale = -2.0
     ang_vel_reward_scale = -0.05
     joint_torque_reward_scale = -2.5e-6
@@ -111,6 +115,10 @@ class SoccerEnv(DirectRLEnv):
                 # "track_ang_vel_z_exp",
                 "track_heading",
                 "track_distance",
+                "out_of_bounds",
+                "ball_dis",
+                "ball_heading",
+                "ball_in_gate",
                 "lin_vel_z_l2",
                 "ang_vel_xy_l2",
                 "dof_torques_l2",
@@ -133,9 +141,9 @@ class SoccerEnv(DirectRLEnv):
         self.ball_pos = self.ball.data.root_pos_w
         self.ball_lin_vel = self.ball.data.root_lin_vel_w
 
-        self.gate_x = torch.tensor([10.0, 10.8], device=self.device)
+        self.gate_x = torch.tensor([6.0, 6.8], device=self.device)
         self.gate_y = torch.tensor([-1.0, 1.0], device=self.device)
-        self.gate_center = torch.tensor([10.0,0.0], device=self.device)
+        self.gate_center = torch.tensor([6.0,0.0], device=self.device)
         self.last_action = torch.zeros(self.num_envs, self.cfg.num_actions, device=self.device)
         self.last_action_no_scale = torch.zeros(self.num_envs, self.cfg.num_actions, device=self.device)
 
@@ -219,15 +227,15 @@ class SoccerEnv(DirectRLEnv):
         self.base_ang_vel = self.carter.data.root_ang_vel_w
         self.base_quat = self.carter.data.root_quat_w
         self.base_pos = self.carter.data.root_pos_w
+        carter_pos = self.base_pos - self.scene.env_origins
         self.root_lin_vel_b = self.carter.data.root_lin_vel_b
         self.root_ang_vel_b = self.carter.data.root_ang_vel_b
         self.joint_vel = self.carter.data.joint_vel
         # ball
         self.ball_pos = self.ball.data.root_pos_w
+        ball_pos = self.ball_pos - self.scene.env_origins
         self.ball_lin_vel = self.ball.data.root_lin_vel_w
         # linear velocity tracking
-        # print("self._commands", self._commands)
-        # print("self.carter.data.root_lin_vel_b", self.carter.data.root_lin_vel_b)
         lin_vel_error = torch.sum(torch.square(self._commands[:, [0]] - self.carter.data.root_lin_vel_b[:, [0]]), dim=1)
         lin_vel_error_mapped = torch.exp(-lin_vel_error / 0.25)
         # yaw rate tracking
@@ -246,27 +254,49 @@ class SoccerEnv(DirectRLEnv):
         target_theta = torch.atan2(target_dir[:, 1], target_dir[:, 0])
         angle_to_target = target_theta - carter_eular[:, 2]
         angle_to_target = math_utils.wrap_to_pi(angle_to_target)
-        # print("====================================")
-        # print("self.base_pos", self.base_pos)
-        # print("self.ball_pos", self.ball_pos)
-        # print("self.base_quat", self.base_quat)
-        # print("carter_eular", carter_eular)
-        # print("angle_to_target", angle_to_target)
-        # print("self.carter_state", self.carter_state)
-        # print("self.ball_state", self.ball_state)
-        # print("self.carter.data.root_state_w", self.carter.data.root_state_w)
-        heading_reward = torch.exp(-torch.square(angle_to_target) / 0.25)
-
-        # terminate reward
-        self.reset_terminated[:], self.reset_time_outs[:] = self._get_dones()
-        terminate_reward = torch.sum(torch.where(self.reset_terminated, -1.0, 0.0), dim=1)
-
-        # 
+        heading_error = torch.sum(torch.square(angle_to_target.unsqueeze(1)), dim=1)
+        heading_reward = torch.exp(-heading_error / 0.25)
 
         # position tracking
-        distance = torch.sum(torch.square(self.ball_pos[:, :2] - self.base_pos[:, :2]), dim=1)
+        distance = torch.sum(torch.square(ball_pos[:, :2] - carter_pos[:, :2]), dim=1)
         # distance_reward = (1. /(1. + torch.square(distance / self.cfg.position_target_sigma_soft)))
         distance_reward = torch.exp(-distance / 0.25)
+
+        # out_of_bounds reward
+        out_of_bounds = torch.any(torch.abs(ball_pos[:, [0]]) > self.cfg.max_ball_pos[0], dim=1)
+        out_of_bounds = out_of_bounds | torch.any(torch.abs(ball_pos[:,[1]]) > self.cfg.max_ball_pos[1], dim=1)
+        out_of_bounds_reward = torch.where(out_of_bounds, 1.0, 0.0)
+
+        # ball dis reward
+        ball_dis = torch.sum(torch.square(ball_pos[:, :2] - self.gate_center), dim=1)
+        ball_dis_reward = torch.exp(- ball_dis / 0.25)
+        # print("ball_pos", self.ball_pos)
+        # print("gate_center", self.gate_center)
+        # print("ball_dis_reward", ball_dis_reward)
+
+        # ball direction reward
+        ball_vel_dir_theta = torch.atan2(self.ball_lin_vel[:, 1], self.ball_lin_vel[:, 0])
+        ball_gate_theta = torch.atan2(self.gate_center[1] - self.ball_pos[:, 1], self.gate_center[0] - self.ball_pos[:, 0])
+        ball_dir_diff = math_utils.wrap_to_pi(ball_vel_dir_theta - ball_gate_theta)
+        ball_heading_error = torch.sum(torch.square(ball_dir_diff.unsqueeze(1)), dim=1)
+        ball_heading_reward = torch.exp(-ball_heading_error / 0.25)
+        
+
+        # ball in gate reward
+        ball_in_gate = torch.logical_and(
+                torch.logical_and(
+                    ball_pos[:, 0] > self.gate_x[0],
+                    ball_pos[:, 0] < self.gate_x[1]
+                ),
+                torch.logical_and(
+                    ball_pos[:, 1] > self.gate_y[0],
+                    ball_pos[:, 1] < self.gate_y[1]
+                )
+            )
+
+        ball_in_gate_reward = torch.sum(torch.where(ball_in_gate, 1.0, 0.0).unsqueeze(1), dim=1)
+
+
         # z velocity tracking
         z_vel_error = torch.square(self.carter.data.root_lin_vel_b[:, 2])
         # angular velocity x/y
@@ -277,13 +307,17 @@ class SoccerEnv(DirectRLEnv):
         joint_accel = torch.sum(torch.square(self.carter.data.joint_acc), dim=1)
         # action rate
         action_rate = torch.sum(torch.square(self._actions - self._previous_actions), dim=1)
-        action_diff = torch.sum(torch.square(self._actions[:, [0]] - self._actions[:, [1]]), dim=1)
+        # flat orientation
         flat_orientation = torch.sum(torch.square(self.carter.data.projected_gravity_b[:, :2]), dim=1)
         rewards = {
             "track_lin_vel_xy_exp": lin_vel_error_mapped * self.cfg.lin_vel_reward_scale * self.step_dt,
             # "track_ang_vel_z_exp": yaw_rate_error_mapped * self.cfg.yaw_rate_reward_scale * self.step_dt,
             "track_heading": heading_reward * self.cfg.heading_reward_scale * self.step_dt,
             "track_distance": distance_reward * self.cfg.distance_reward_scale * self.step_dt,
+            "out_of_bounds": out_of_bounds_reward * self.cfg.out_of_bounds_reward_scale * self.step_dt,
+            "ball_dis": ball_dis_reward * self.cfg.ball_dis_reward_scale * self.step_dt,
+            "ball_heading": ball_heading_reward * self.cfg.ball_heading_reward_scale * self.step_dt,
+            "ball_in_gate": ball_in_gate_reward * self.cfg.ball_in_gate_reward_scale * self.step_dt,
             "lin_vel_z_l2": z_vel_error * self.cfg.z_vel_reward_scale * self.step_dt,
             "ang_vel_xy_l2": ang_vel_error * self.cfg.ang_vel_reward_scale * self.step_dt,
             "dof_torques_l2": joint_torques * self.cfg.joint_torque_reward_scale * self.step_dt,
@@ -306,13 +340,28 @@ class SoccerEnv(DirectRLEnv):
         carter_eular = math_utils.wrap_to_pi(carter_eular)
 
         ball_pos = self.ball.data.root_state_w[:, :3] - self.scene.env_origins
-        out_of_bounds = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
+        # out_of_bounds = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
         out_of_bounds = torch.any(torch.abs(ball_pos[:, [0]]) > self.cfg.max_ball_pos[0], dim=1)
         out_of_bounds = out_of_bounds | torch.any(torch.abs(ball_pos[:,[1]]) > self.cfg.max_ball_pos[1], dim=1)
         out_of_bounds = out_of_bounds | torch.any((torch.abs(carter_eular[:,[0]]) + torch.abs(carter_eular[:,[1]])) % (2 * torch.pi) > 0.8, dim=1)
+        ball_in_gate = torch.where(
+            torch.logical_and(
+                torch.logical_and(
+                    ball_pos[:, 0] > self.gate_x[0],
+                    ball_pos[:, 0] < self.gate_x[1]
+                ),
+                torch.logical_and(
+                    ball_pos[:, 1] > self.gate_y[0],
+                    ball_pos[:, 1] < self.gate_y[1]
+                )
+            ),
+            True,
+            False
+        )
+        terminate = ball_in_gate | out_of_bounds
         # print((torch.abs(carter_eular[:,0]) + torch.abs(carter_eular[:,1])) % (2 * torch.pi))
         time_out = self.episode_length_buf >= self.max_episode_length - 1
-        return out_of_bounds, time_out
+        return terminate, time_out
 
     def _reset_idx(self, env_ids: Sequence[int] | None):
         if env_ids is None:
@@ -336,12 +385,12 @@ class SoccerEnv(DirectRLEnv):
         default_root_state[:, :3] += self.scene.env_origins[env_ids]
         default_root_state[:, 0] += sample_uniform(
             - self.cfg.initial_carter_range[0],
-            self.cfg.initial_carter_range[0],
+            - 5.0,
             default_root_state[:, 0].shape,
             self.device,
         )
         default_root_state[:, 1] += sample_uniform(
-            - self.cfg.initial_carter_range[1],
+            - 2.0,
             self.cfg.initial_carter_range[1],
             default_root_state[:, 1].shape,
             self.device,
@@ -382,36 +431,36 @@ class SoccerEnv(DirectRLEnv):
     
 
     
-    def _reward_stop(self):
-        # Penalize stop
-        return torch.sum(torch.square(self.carter.data.root_state_w[:, 7:9]), dim=1)
+    # def _reward_stop(self):
+    #     # Penalize stop
+    #     return torch.sum(torch.square(self.carter.data.root_state_w[:, 7:9]), dim=1)
     
-    def _reward_action_rate(self):
-        # Penalize changes in actions
-        return torch.sum(torch.square(self.last_action - self.actions), dim=1)
+    # def _reward_action_rate(self):
+    #     # Penalize changes in actions
+    #     return torch.sum(torch.square(self.last_action - self.actions), dim=1)
     
-    def _reward_out_of_bounds(self):
-        ball_pos = self.ball.data.root_state_w[:, :3] - self.scene.env_origins
-        return torch.any(torch.abs(ball_pos[:,0]) > self.cfg.max_ball_pos[0]) | torch.any(torch.abs(ball_pos[:,1]) > self.cfg.max_ball_pos[1])
+    # def _reward_out_of_bounds(self):
+    #     ball_pos = self.ball.data.root_state_w[:, :3] - self.scene.env_origins
+    #     return torch.any(torch.abs(ball_pos[:,0]) > self.cfg.max_ball_pos[0]) | torch.any(torch.abs(ball_pos[:,1]) > self.cfg.max_ball_pos[1])
     
-    def _reward_velo_dir(self):
-        carter_vel = self.carter.data.root_state_w[:, 7:10]
-        carter_eular = math_utils.euler_xyz_from_quat(self.carter.data.root_state_w[:, 3:7])
-        carter_eular = torch.stack(carter_eular, dim=-1)
-        carter_eular = torch.where(carter_eular > torch.pi, carter_eular - 2 * torch.pi, carter_eular)
-        xy_diff = self.ball_pos - self.base_pos
-        xy_diff = xy_diff / (0.001 + torch.norm(xy_diff, dim=1).unsqueeze(1))
-        bad_dir = carter_vel[:,0] * xy_diff[:,0] + carter_vel[:,1] * xy_diff[:,1] < -0.25
-        # good_dir = carter_vel[:,0] * xy_diff[:,0] + carter_vel[:,1] * xy_diff[:,1] > 0.25
-        theta_tar = torch.atan2(xy_diff[:,1], xy_diff[:,0])
-        theta_carter_vel = torch.atan2(carter_vel[:,1], carter_vel[:,0])
-        diff1 = torch.abs(theta_tar - theta_carter_vel)
-        diff2 = torch.abs(carter_eular[:, 2] - theta_tar)
-        distance = torch.norm(self.ball.data.root_state_w[:, :2] - self.carter.data.root_state_w[:, :2], dim=1)
-        reward =  torch.exp(-diff2) - 0.3
+    # def _reward_velo_dir(self):
+    #     carter_vel = self.carter.data.root_state_w[:, 7:10]
+    #     carter_eular = math_utils.euler_xyz_from_quat(self.carter.data.root_state_w[:, 3:7])
+    #     carter_eular = torch.stack(carter_eular, dim=-1)
+    #     carter_eular = torch.where(carter_eular > torch.pi, carter_eular - 2 * torch.pi, carter_eular)
+    #     xy_diff = self.ball_pos - self.base_pos
+    #     xy_diff = xy_diff / (0.001 + torch.norm(xy_diff, dim=1).unsqueeze(1))
+    #     bad_dir = carter_vel[:,0] * xy_diff[:,0] + carter_vel[:,1] * xy_diff[:,1] < -0.25
+    #     # good_dir = carter_vel[:,0] * xy_diff[:,0] + carter_vel[:,1] * xy_diff[:,1] > 0.25
+    #     theta_tar = torch.atan2(xy_diff[:,1], xy_diff[:,0])
+    #     theta_carter_vel = torch.atan2(carter_vel[:,1], carter_vel[:,0])
+    #     diff1 = torch.abs(theta_tar - theta_carter_vel)
+    #     diff2 = torch.abs(carter_eular[:, 2] - theta_tar)
+    #     distance = torch.norm(self.ball.data.root_state_w[:, :2] - self.carter.data.root_state_w[:, :2], dim=1)
+    #     reward =  torch.exp(-diff2) - 0.3
         
-        # return bad_dir * 1.0 * (distance > self.cfg.position_target_sigma_soft)
-        return reward
+    #     # return bad_dir * 1.0 * (distance > self.cfg.position_target_sigma_soft)
+    #     return reward
     
 
 @torch.jit.script
