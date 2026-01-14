@@ -68,6 +68,8 @@ class JointAction(ActionTerm):
             f"Resolved joint names for the action term {self.__class__.__name__}:"
             f" {self._joint_names} [{self._joint_ids}]"
         )
+        print(f"[INFO] Resolved joint names for the action term {self.__class__.__name__}:"
+              f" {self._joint_names} [{self._joint_ids}]")
 
         # Avoid indexing across all joints for efficiency
         if self._num_joints == self._asset.num_joints and not self.cfg.preserve_order:
@@ -166,6 +168,8 @@ class JointAction(ActionTerm):
     def process_actions(self, actions: torch.Tensor):
         # store the raw actions
         self._raw_actions[:] = actions
+        # print(f"[DEBUG] JointAction shape: {actions.shape}")
+        # print(f"[DEBUG] JointAction raw_actions: {self._raw_actions}")
         # apply the affine transformations
         self._processed_actions = self._raw_actions * self._scale + self._offset
         # clip actions

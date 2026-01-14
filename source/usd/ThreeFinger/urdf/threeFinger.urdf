@@ -1,0 +1,622 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="ThreeFinger">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.084771 -0.090746 0.052139"
+        rpy="0 0 0" />
+      <mass
+        value="0.6097" />
+      <inertia
+        ixx="0.00050932"
+        ixy="-7.2207E-06"
+        ixz="7.1264E-05"
+        iyy="0.00074605"
+        iyz="3.8554E-06"
+        izz="0.00074795" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Empty_Link1-1">
+    <inertial>
+      <origin
+        xyz="-0.01121 -0.024986 0.01133"
+        rpy="0 0 0" />
+      <mass
+        value="0.012406" />
+      <inertia
+        ixx="3.3204E-06"
+        ixy="-2.9011E-07"
+        ixz="4.5844E-08"
+        iyy="2.1176E-06"
+        iyz="-7.3449E-08"
+        izz="2.0437E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link1-1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link1-1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="1"
+    type="revolute">
+    <origin
+      xyz="-0.10214 -0.035 0"
+      rpy="0 0 0.012849" />
+    <parent
+      link="base_link" />
+    <child
+      link="Empty_Link1-1" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Empty_Link1-2">
+    <inertial>
+      <origin
+        xyz="0.0139744117353783 -4.73514894031024E-05 0.0291729369925875"
+        rpy="0 0 0" />
+      <mass
+        value="0.0328223509634194" />
+      <inertia
+        ixx="5.87327775368531E-06"
+        ixy="-2.42293733672324E-09"
+        ixz="1.24666356791E-07"
+        iyy="5.07036278289735E-06"
+        iyz="1.167458212382E-08"
+        izz="1.44943749784953E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link1-2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.529411764705882 0.549019607843137 0.549019607843137 0.25" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link1-2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="2"
+    type="revolute">
+    <origin
+      xyz="-0.0014052 -0.03 0.030305"
+      rpy="0.067362 0 3.1416" />
+    <parent
+      link="Empty_Link1-1" />
+    <child
+      link="Empty_Link1-2" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Empty_Link1-3">
+    <inertial>
+      <origin
+        xyz="0.00961442030438391 0.000239669477866855 0.07662051505946"
+        rpy="0 0 0" />
+      <mass
+        value="0.0297510593823822" />
+      <inertia
+        ixx="5.13139223918516E-06"
+        ixy="-1.53884309665112E-09"
+        ixz="-9.6380591873613E-08"
+        iyy="4.30641204098196E-06"
+        iyz="1.09386894262369E-08"
+        izz="1.33788148562098E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link1-3.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.529411764705882 0.549019607843137 0.549019607843137 0.25" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link1-3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="3"
+    type="revolute">
+    <origin
+      xyz="0.0034304 0 0"
+      rpy="0.0063619 0 0" />
+    <parent
+      link="Empty_Link1-2" />
+    <child
+      link="Empty_Link1-3" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Empty_Link1-4">
+    <inertial>
+      <origin
+        xyz="-3.46944695195361E-17 -0.00166499315424778 -0.00656994357639908"
+        rpy="0 0 0" />
+      <mass
+        value="0.0144395845106866" />
+      <inertia
+        ixx="9.37555104291416E-07"
+        ixy="-1.30115510354591E-21"
+        ixz="1.45583787809333E-22"
+        iyy="1.97370631177313E-07"
+        iyz="7.70600251543202E-08"
+        izz="9.2293655079003E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link1-4.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.850980392156863 0.850980392156863 0.850980392156863 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link1-4.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="4"
+    type="revolute">
+    <origin
+      xyz="0.0065744 0.0012681 0.10847"
+      rpy="-1.5708 0.058958 1.5708" />
+    <parent
+      link="Empty_Link1-3" />
+    <child
+      link="Empty_Link1-4" />
+    <axis
+      xyz="0 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Empty_Link2-1">
+    <inertial>
+      <origin
+        xyz="-0.0107803948360339 -4.73526693233611E-05 0.0291729383916289"
+        rpy="0 0 0" />
+      <mass
+        value="0.0328223487354742" />
+      <inertia
+        ixx="5.8732772214781E-06"
+        ixy="-2.42294746335941E-09"
+        ixz="1.24666301411802E-07"
+        iyy="5.07036230233851E-06"
+        iyz="1.16743686725771E-08"
+        izz="1.44943743044965E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link2-1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.529411764705882 0.549019607843137 0.549019607843137 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link2-1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="1"
+    type="continuous">
+    <origin
+      xyz="-0.07678 -0.065 0.030225"
+      rpy="-0.065421 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="Empty_Link2-1" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <link
+    name="Empty_Link2-2">
+    <inertial>
+      <origin
+        xyz="-0.00846000852005921 0.00023966976134833 0.0766205168994215"
+        rpy="0 0 0" />
+      <mass
+        value="0.029751058131133" />
+      <inertia
+        ixx="5.13139188477036E-06"
+        ixy="-1.5388188256391E-09"
+        ixz="-9.6380479420104E-08"
+        iyy="4.30641164843404E-06"
+        iyz="1.09388007275865E-08"
+        izz="1.33788144309999E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link2-2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.529411764705882 0.549019607843137 0.549019607843137 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link2-2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="2"
+    type="revolute">
+    <origin
+      xyz="-0.00325 0 0"
+      rpy="0.0063619 0 0" />
+    <parent
+      link="Empty_Link2-1" />
+    <child
+      link="Empty_Link2-2" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Empty_Link2-3">
+    <inertial>
+      <origin
+        xyz="0.0130699435763991 4.81559236931162E-15 -0.0158350068457522"
+        rpy="0 0 0" />
+      <mass
+        value="0.0144395845106867" />
+      <inertia
+        ixx="9.22936550790032E-07"
+        ixy="-2.34505703658783E-22"
+        ixz="7.706002515432E-08"
+        iyy="9.37555104291412E-07"
+        iyz="2.15645985692574E-21"
+        izz="1.97370631177308E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link2-3.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.529411764705882 0.549019607843137 0.549019607843137 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link2-3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="3"
+    type="revolute">
+    <origin
+      xyz="-0.018 -0.00014452 0.126"
+      rpy="0.012952 0 0" />
+    <parent
+      link="Empty_Link2-2" />
+    <child
+      link="Empty_Link2-3" />
+    <axis
+      xyz="0 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Empty_Link3-1">
+    <inertial>
+      <origin
+        xyz="0.0139796054529292 -4.73517129236378E-05 0.0291729378065988"
+        rpy="0 0 0" />
+      <mass
+        value="0.0328223497675183" />
+      <inertia
+        ixx="5.87327743791703E-06"
+        ixy="-2.42294066054213E-09"
+        ixz="1.24666331177571E-07"
+        iyy="5.07036247527995E-06"
+        iyz="1.16745429553433E-08"
+        izz="1.44943748215806E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link3-1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.529411764705882 0.549019607843137 0.549019607843137 0.25" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link3-1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="1"
+    type="revolute">
+    <origin
+      xyz="-0.05004 -0.065 0.030225"
+      rpy="0.047745 0 3.1416" />
+    <parent
+      link="base_link" />
+    <child
+      link="Empty_Link3-1" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Empty_Link3-2">
+    <inertial>
+      <origin
+        xyz="0.00992310956353654 0.000861287397856764 0.0765067308245715"
+        rpy="0 0 0" />
+      <mass
+        value="0.0297510595337044" />
+      <inertia
+        ixx="5.13139224907959E-06"
+        ixy="-1.53884277125971E-09"
+        ixz="-9.63805939455314E-08"
+        iyy="4.30641204988599E-06"
+        iyz="1.0938695897597E-08"
+        izz="1.33788148655002E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link3-2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.529411764705882 0.549019607843137 0.549019607843137 0.25" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link3-2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="2"
+    type="revolute">
+    <origin
+      xyz="0.0031269 -0.00062233 0.00010983"
+      rpy="0.0063619 0 0" />
+    <parent
+      link="Empty_Link3-1" />
+    <child
+      link="Empty_Link3-2" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Empty_Link3-3">
+    <inertial>
+      <origin
+        xyz="-4.16333634234434E-17 -0.00166499315424776 -0.00656994357639908"
+        rpy="0 0 0" />
+      <mass
+        value="0.0144395845106867" />
+      <inertia
+        ixx="9.37555104291422E-07"
+        ixy="-7.68988456459922E-21"
+        ixz="8.80120171756421E-22"
+        iyy="1.97370631177313E-07"
+        iyz="7.70600251543212E-08"
+        izz="9.22936550790037E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link3-3.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.850980392156863 0.850980392156863 0.850980392156863 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/workspace/isaaclab/source/usd/ThreeFinger/meshes/Empty_Link3-3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="3"
+    type="revolute">
+    <origin
+      xyz="0.0068831 0.001239 0.10838"
+      rpy="-1.5708 0.019488 1.5708" />
+    <parent
+      link="Empty_Link3-2" />
+    <child
+      link="Empty_Link3-3" />
+    <axis
+      xyz="0 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+</robot>
