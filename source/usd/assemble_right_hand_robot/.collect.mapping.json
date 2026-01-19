@@ -1,0 +1,17 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/IsaacLab/Robots/KukaAllegro/configuration/allegro.usd",
+            "source_hash": "98c531067d5ec644c5bd8315e10bb8cf758dff3f",
+            "target_url": "./configuration/allegro.usd",
+            "target_hash": "88999cf918897ab380de4060f6a765497797fb14"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/IsaacLab/Robots/KukaAllegro/configuration/kuka.usd",
+            "source_hash": "38b1d65e9314e4a8db58bfbe82905c841a1ce35d",
+            "target_url": "./configuration/kuka.usd",
+            "target_hash": "b804ad119e696d1f8115a035d0a3d8380b3b22e9"
+        }
+    ]
+}

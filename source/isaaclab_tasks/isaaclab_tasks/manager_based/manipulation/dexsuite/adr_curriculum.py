@@ -114,6 +114,8 @@ class CurriculumCfg:
             "address": "events.variable_gravity.params.gravity_distribution_params",
             "modify_fn": mdp.initial_final_interpolate_fn,
             "modify_params": {
+                # [FIX]: Set initial value to standard gravity immediately.
+                # Avoid zero-gravity curriculum which makes objects float and discourages contact.
                 "initial_value": ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 "final_value": ((0.0, 0.0, -9.81), (0.0, 0.0, -9.81)),
                 "difficulty_term_str": "adr",
