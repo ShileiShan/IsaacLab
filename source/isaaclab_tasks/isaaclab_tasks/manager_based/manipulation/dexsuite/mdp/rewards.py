@@ -28,6 +28,28 @@ def action_l2_clamped(env: ManagerBasedRLEnv) -> torch.Tensor:
     return torch.sum(torch.square(env.action_manager.action), dim=1).clamp(-1000, 1000)
 
 
+def object_ee_distance1(
+    env: ManagerBasedRLEnv,
+    std: float,
+    object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward reaching the object using a tanh-kernel on end-effector distance.
+
+    The reward is close to 1 when the mean distance between the object and all tracked end-effector bodies is small.
+    """
+    asset: RigidObject = env.scene[asset_cfg.name]
+    object: RigidObject = env.scene[object_cfg.name]
+    asset_pos = asset.data.body_pos_w[:, asset_cfg.body_ids]
+    object_pos = object.data.root_pos_w
+
+    # [Mod] Use Mean distance.
+    # Encourages ALL tracked bodies (e.g. all fingertips) to approach the object.
+    # This promotes a better grasping posture (enveloping) than Min (poking) or Max (stagnation).
+    object_ee_distance = torch.norm(asset_pos - object_pos[:, None, :], dim=-1).mean(dim=-1)
+    
+    return 1 - torch.tanh(object_ee_distance / std)
+
 def object_ee_distance(
     env: ManagerBasedRLEnv,
     std: float,
@@ -130,6 +152,42 @@ def contacts_7DOF(env: ManagerBasedRLEnv, threshold: float) -> torch.Tensor:
     good_contact_cond1 = ((thumb_contact_mag > threshold)| (thumb_link_contact_mag > threshold)) & (
         (index_contact_mag > threshold) | (middle_contact_mag > threshold) | (middle_link_contact_mag > threshold) | (index_link_contact_mag > threshold)
     )
+    # good_contact_cond1 = (thumb_contact_mag > threshold) | (middle_contact_mag > threshold) | (index_contact_mag > threshold)
+
+    return good_contact_cond1
+
+def contacts_7DOF1(env: ManagerBasedRLEnv, threshold: float) -> torch.Tensor:
+    """Penalize undesired contacts as the number of violations that are above a threshold."""
+
+    # thumb_contact_sensor: ContactSensor = env.scene.sensors["thumb_link_3_object_s"]
+    # index_contact_sensor: ContactSensor = env.scene.sensors["index_link_3_object_s"]
+    # middle_contact_sensor: ContactSensor = env.scene.sensors["middle_link_3_object_s"]
+    thumb_contact_sensor: ContactSensor = env.scene.sensors["Empty_Link1_3_object_s"]
+    index_contact_sensor: ContactSensor = env.scene.sensors["Empty_Link2_1_object_s"]
+    middle_contact_sensor: ContactSensor = env.scene.sensors["Empty_Link3_1_object_s"]
+    thumb_link_contact_sensor: ContactSensor = env.scene.sensors["Empty_Link1_2_object_s"]
+    index_link_contact_sensor: ContactSensor = env.scene.sensors["Empty_Link2_object_s"]
+    middle_link_contact_sensor: ContactSensor = env.scene.sensors["Empty_Link3_object_s"]
+    # ring_contact_sensor: ContactSensor = env.scene.sensors["ring_link_3_object_s"]
+    # check if contact force is above threshold
+    thumb_contact = thumb_contact_sensor.data.force_matrix_w.view(env.num_envs, 3)
+    index_contact = index_contact_sensor.data.force_matrix_w.view(env.num_envs, 3)
+    middle_contact = middle_contact_sensor.data.force_matrix_w.view(env.num_envs, 3)
+    thumb_link_contact = thumb_link_contact_sensor.data.force_matrix_w.view(env.num_envs, 3)
+    index_link_contact = index_link_contact_sensor.data.force_matrix_w.view(env.num_envs, 3)
+    middle_link_contact = middle_link_contact_sensor.data.force_matrix_w.view(env.num_envs, 3)
+    # ring_contact = ring_contact_sensor.data.force_matrix_w.view(env.num_envs, 3)
+
+    thumb_contact_mag = torch.norm(thumb_contact, dim=-1)
+    index_contact_mag = torch.norm(index_contact, dim=-1)
+    middle_contact_mag = torch.norm(middle_contact, dim=-1)
+    thumb_link_contact_mag = torch.norm(thumb_link_contact, dim=-1)
+    index_link_contact_mag = torch.norm(index_link_contact, dim=-1)
+    middle_link_contact_mag = torch.norm(middle_link_contact, dim=-1)
+    # ring_contact_mag = torch.norm(ring_contact, dim=-1)
+    good_contact_cond1 = ((thumb_contact_mag > threshold)| (thumb_link_contact_mag > threshold)) & (
+        (index_contact_mag > threshold) | (index_link_contact_mag > threshold) ) & (
+        (middle_contact_mag > threshold) | (middle_link_contact_mag > threshold))
     # good_contact_cond1 = (thumb_contact_mag > threshold) | (middle_contact_mag > threshold) | (index_contact_mag > threshold)
 
     return good_contact_cond1
@@ -330,6 +388,20 @@ def position_command_error_tanh_7DOF(
     des_pos_w, _ = combine_frame_transforms(asset.data.root_pos_w, asset.data.root_quat_w, des_pos_b)
     distance = torch.norm(object.data.root_pos_w - des_pos_w, dim=1)
     return (1 - torch.tanh(distance / std)) * contacts_7DOF(env, 1.0).float()
+
+def position_command_error_tanh_7DOF1(
+    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg, align_asset_cfg: SceneEntityCfg
+) -> torch.Tensor:
+    """Reward tracking of commanded position using tanh kernel, gated by contact presence."""
+
+    asset: RigidObject = env.scene[asset_cfg.name]
+    object: RigidObject = env.scene[align_asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    # obtain the desired and current positions
+    des_pos_b = command[:, :3]
+    des_pos_w, _ = combine_frame_transforms(asset.data.root_pos_w, asset.data.root_quat_w, des_pos_b)
+    distance = torch.norm(object.data.root_pos_w - des_pos_w, dim=1)
+    return (1 - torch.tanh(distance / std)) * contacts_7DOF1(env, 1.0).float()
 
 def orientation_command_error_tanh(
     env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg, align_asset_cfg: SceneEntityCfg

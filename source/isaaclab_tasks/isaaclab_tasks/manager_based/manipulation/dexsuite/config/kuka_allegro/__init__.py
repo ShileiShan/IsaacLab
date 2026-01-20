@@ -131,4 +131,27 @@ gym.register(
     },
 )
 
+# Dexsuite Kuka 7DOF Three Finger Lift Environments
+gym.register(
+    id="Isaac-Dexsuite-Kuka-7DOF-ThreeFinger-Lift-v1",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.dexsuite_kuka_allegro_env_cfg:DexsuiteKuka7DOFThreeFingerLiftEnvCfg1",
+        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:DexsuiteKukaAllegroPPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Isaac-Dexsuite-Kuka-7DOF-ThreeFinger-Lift-Play-v1",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.dexsuite_kuka_allegro_env_cfg:DexsuiteKuka7DOFThreeFingerLiftEnvCfg1_PLAY",
+        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:DexsuiteKukaAllegroPPORunnerCfg",
+    },
+)
+
 
