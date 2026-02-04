@@ -34,6 +34,14 @@ parser.add_argument(
     help="Use the pre-trained checkpoint from Nucleus.",
 )
 parser.add_argument("--real-time", action="store_true", default=False, help="Run in real-time, if possible.")
+parser.add_argument("--decimation", type=int, default=None, help="Override the environment decimation.")
+parser.add_argument("--video_fps", type=int, default=30, help="The FPS of the recorded video.")
+parser.add_argument(
+    "--renderer",
+    type=str,
+    default="RayTracedLighting",
+    help="Renderer mode (e.g., 'PathTracing', 'RayTracedLighting').",
+)
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
@@ -50,6 +58,9 @@ sys.argv = [sys.argv[0]] + hydra_args
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
+
+# Renderer settings functionality moved to main()
+
 
 """Rest everything follows."""
 
@@ -90,6 +101,27 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # override configurations with non-hydra CLI arguments
     agent_cfg: RslRlBaseRunnerCfg = cli_args.update_rsl_rl_cfg(agent_cfg, args_cli)
     env_cfg.scene.num_envs = args_cli.num_envs if args_cli.num_envs is not None else env_cfg.scene.num_envs
+    
+    # [Mod] Override decimation
+    if args_cli.decimation is not None:
+        env_cfg.decimation = args_cli.decimation
+        # Provide logic to update render interval if needed, though usually bound properties might not update automatically
+        if hasattr(env_cfg.sim, "render_interval"):
+            env_cfg.sim.render_interval = args_cli.decimation
+
+    # [Mod] Apply Renderer Settings
+    if args_cli.renderer in ["PathTracing", "RayTracedLighting"]:
+        if hasattr(env_cfg, "sim") and hasattr(env_cfg.sim, "render"):
+             # Enable translucency (overrides preset defaults)
+             env_cfg.sim.render.enable_translucency = True
+             
+             # Initialize carb_settings if needed
+             if env_cfg.sim.render.carb_settings is None:
+                 env_cfg.sim.render.carb_settings = {}
+             
+             # Set specific carb settings
+             env_cfg.sim.render.carb_settings["/rtx/rendermode"] = args_cli.renderer
+             env_cfg.sim.render.carb_settings["/rtx/raytracing/fractionalCutoutOpacity"] = True
 
     # set the environment seed
     # note: certain randomizations occur in the environment initialization so we set the seed here
@@ -130,6 +162,15 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             "video_length": args_cli.video_length,
             "disable_logger": True,
         }
+        # [Mod] Add frames_per_sec if supported
+        # We add it to kwargs. Assuming gym/gymnasium wrapper accepts it.
+        # It's standard in newer gymnasium RecordVideo to have `fps` or similar, 
+        # but the wrapper signature varies. 
+        # For gymnasium: `frames_per_sec` is NOT in __init__ in some versions, but implied by metadata.
+        # However, passing it as kwarg usually works for some custom wrappers or updated ones.
+        # Let's try to updating the env metadata explicitly which RecordVideo uses.
+        env.metadata["render_fps"] = args_cli.video_fps
+        
         print("[INFO] Recording videos during training.")
         print_dict(video_kwargs, nesting=4)
         env = gym.wrappers.RecordVideo(env, **video_kwargs)

@@ -61,7 +61,7 @@ class SceneCfg(InteractiveSceneCfg):
             collision_props=sim_utils.CollisionPropertiesCfg(),
             mass_props=sim_utils.MassPropertiesCfg(mass=0.2),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(-0.55, 0.1, 0.35)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(-0.55, 0.1, 1.115)),
     )
 
     # table
@@ -74,7 +74,7 @@ class SceneCfg(InteractiveSceneCfg):
             # trick: we let visualizer's color to show the table with success coloring
             visible=False,
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(-0.55, 0.0, 0.235), rot=(1.0, 0.0, 0.0, 0.0)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(-0.55, 0.0, 1.0), rot=(1.0, 0.0, 0.0, 0.0)),  # z 0.235 -> 1.0
     )
 
     # plane
@@ -103,11 +103,11 @@ class CommandsCfg:
         asset_name="robot",
         object_name="object",
         resampling_time_range=(3.0, 5.0),
-        debug_vis=False,
+        debug_vis=True,
         ranges=mdp.ObjectUniformPoseCommandCfg.Ranges(
-            pos_x=(-0.7, -0.3),
-            pos_y=(-0.25, 0.25),
-            pos_z=(0.55, 0.95),
+            pos_x=(0.32, 0.72),
+            pos_y=(-0.24, 0.0),
+            pos_z=(-0.2, 0.45),
             roll=(-3.14, 3.14),
             pitch=(-3.14, 3.14),
             yaw=(0.0, 0.0),
@@ -250,7 +250,7 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": [-0.05, 0.05], "y": [-0.05, 0.05], "z": [0.0, 0.0]},
+            "pose_range": {"x": [-0.01, 0.01], "y": [-0.01, 0.01], "z": [0.0, 0.0]},
             "velocity_range": {"x": [-0.0, 0.0], "y": [-0.0, 0.0], "z": [-0.0, 0.0]},
             "asset_cfg": SceneEntityCfg("table"),
         },
@@ -262,8 +262,8 @@ class EventCfg:
         params={
             "pose_range": {
                 "x": [-0.2, 0.2],
-                "y": [-0.1, 0.2],
-                "z": [0.0, 0.4],
+                "y": [-0.1, 0.05],
+                "z": [-0.05, 0.3],
                 "roll": [-3.14, 3.14],
                 "pitch": [-3.14, 3.14],
                 "yaw": [-3.14, 3.14],
@@ -296,7 +296,7 @@ class EventCfg:
         func=mdp.reset_joints_by_offset,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("robot", joint_names="iiwa7_joint_7"),
+            "asset_cfg": SceneEntityCfg("robot", joint_names="joint7"),
             "position_range": [-3, 3],
             "velocity_range": [0.0, 0.0],
         },
@@ -391,7 +391,7 @@ class DexsuiteReorientEnvCfg(ManagerBasedEnvCfg):
     """Dexsuite reorientation task definition, also the base definition for derivative Lift task and evaluation task"""
 
     # Scene settings
-    viewer: ViewerCfg = ViewerCfg(eye=(-2.25, 0.0, 0.75), lookat=(0.0, 0.0, 0.45), origin_type="env")
+    viewer: ViewerCfg = ViewerCfg(eye=(-2.25, 0.0, 1.75), lookat=(0.0, 0.0, 1.0), origin_type="env")
     scene: SceneCfg = SceneCfg(num_envs=4096, env_spacing=3, replicate_physics=False)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
@@ -445,6 +445,18 @@ class DexsuiteLiftEnvCfg(DexsuiteReorientEnvCfg):
             self.curriculum.adr.params["rot_tol"] = None  # make adr not tracking orientation
 
 
+class DexsuiteLiftRightArmEnvCfg(DexsuiteReorientEnvCfg):
+    """Dexsuite lift task definition"""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.rewards.orientation_tracking = None  # no orientation reward
+        self.commands.object_pose.position_only = True
+        if self.curriculum is not None:
+            self.rewards.success.params["rot_std"] = None  # make success reward not consider orientation
+            self.curriculum.adr.params["rot_tol"] = None  # make adr not tracking orientation
+
+
 class DexsuiteReorientEnvCfg_PLAY(DexsuiteReorientEnvCfg):
     """Dexsuite reorientation task evaluation environment definition"""
 
@@ -463,4 +475,15 @@ class DexsuiteLiftEnvCfg_PLAY(DexsuiteLiftEnvCfg):
         self.commands.object_pose.resampling_time_range = (2.0, 3.0)
         self.commands.object_pose.debug_vis = True
         self.commands.object_pose.position_only = True
-        self.curriculum.adr.params["init_difficulty"] = self.curriculum.adr.params["max_difficulty"]
+        # self.curriculum.adr.params["init_difficulty"] = self.curriculum.adr.params["max_difficulty"]
+
+
+class DexsuiteLiftRightArmEnvCfg_PLAY(DexsuiteLiftRightArmEnvCfg):
+    """Dexsuite lift task evaluation environment definition"""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.commands.object_pose.resampling_time_range = (2.0, 3.0)
+        self.commands.object_pose.debug_vis = True
+        self.commands.object_pose.position_only = True
+        # self.curriculum.adr.params["init_difficulty"] = self.curriculum.adr.params["max_difficulty"]

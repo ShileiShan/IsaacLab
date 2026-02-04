@@ -50,6 +50,37 @@ def object_ee_distance1(
     
     return 1 - torch.tanh(object_ee_distance / std)
 
+def object_ee_distance2(
+    env: ManagerBasedRLEnv,
+    std: float,
+    object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward reaching the object using a tanh-kernel on end-effector distance.
+
+    The reward is close to 1 when the mean distance between the object and all tracked end-effector bodies is small.
+    """
+    asset: RigidObject = env.scene[asset_cfg.name]
+    object: RigidObject = env.scene[object_cfg.name]
+    asset_pos = asset.data.body_pos_w[:, asset_cfg.body_ids]
+    object_pos = object.data.root_pos_w
+
+    # Calculate distances for all tracked bodies
+    # shape: (num_envs, num_bodies)
+    dists = torch.norm(asset_pos - object_pos[:, None, :], dim=-1)
+
+    # Metric 1: Mean distance (Encourages overall closeness / enveloping)
+    dist_mean = dists.mean(dim=-1)
+    # Metric 2: Max distance (Encourages worst finger to be close)
+    dist_max = dists.max(dim=-1).values
+
+    # Calculate rewards for both metrics using tanh kernel
+    rew_mean = 1 - torch.tanh(dist_mean / std)
+    rew_max = 1 - torch.tanh(dist_max / std)
+
+    # Return combined reward (average)
+    return (0.5 * rew_mean + 1.5 * rew_max) / 2.0
+
 def object_ee_distance(
     env: ManagerBasedRLEnv,
     std: float,
@@ -188,7 +219,7 @@ def contacts_7DOF1(env: ManagerBasedRLEnv, threshold: float) -> torch.Tensor:
     good_contact_cond1 = ((thumb_contact_mag > threshold)| (thumb_link_contact_mag > threshold)) & (
         (index_contact_mag > threshold) | (index_link_contact_mag > threshold) ) & (
         (middle_contact_mag > threshold) | (middle_link_contact_mag > threshold))
-    # good_contact_cond1 = (thumb_contact_mag > threshold) | (middle_contact_mag > threshold) | (index_contact_mag > threshold)
+    # good_contact_cond1 = (thumb_contact_mag > threshold) & (middle_contact_mag > threshold) & (index_contact_mag > threshold)
 
     return good_contact_cond1
 
@@ -265,6 +296,69 @@ def reward_grasp_status(
     # Apply tanh kernel
     return 1.0 - torch.tanh(distance / std)
 
+
+
+def penalty_tip_status(
+    env: ManagerBasedRLEnv, 
+    threshold: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Penalize finger tip splay (outward rotation/hyperextension).
+    
+    Specifically targets joints that control distal lateral movement or flexion/extension 
+    to prevent unnatural "splaying" or backward bending behaviour.
+    
+    Penalizes if:
+    - thumb_joint3 < threshold
+    - middle_joint2 < threshold
+    - index_joint2 < threshold
+    """
+    # extract the used quantities (states)
+    robot = env.scene[asset_cfg.name]
+    
+    # We want to check these specific joints.
+    # Note: Ensure these names match your URDF/USD.
+    target_joints = ["thumb_joint3", "middle_joint2", "index_joint2"]
+    
+    # Find indices
+    all_names = robot.data.joint_names
+    indices = [all_names.index(name) for name in target_joints if name in all_names]
+    
+    if len(indices) != 3:
+        # Fallback if names don't match, just return 0 to avoid crash
+        # Ideally user checks names
+        return torch.zeros(env.num_envs, device=env.device)
+        
+    # Get current positions: shape (num_envs, 3)
+    joint_pos = robot.data.joint_pos[:, indices]
+    
+    # Logic: 
+    # If val < threshold (e.g. 0), it is bad.
+    # Penalty should be proportional to how much it is less than 0.
+    # val < 0 -> diff = val - 0 = negative.
+    # We want a positive scalar for penalty (which will be subtracted later or return negative reward).
+    # Usually penalty functions return POSITIVE value, and we set weight to NEGATIVE in config.
+    # OR we return NEGATIVE value here and set weight to POSITIVE.
+    # Let's return POSITIVE cost (v^2 or abs(v)) for violations.
+    
+    # Mask for violations (val < threshold)
+    violations = joint_pos < threshold
+    
+    # Calculate magnitude of violation: (threshold - val)
+    # If val=-0.5, thresh=0 -> diff=0.5
+    diff = threshold - joint_pos
+    
+    # Filter only violating elements
+    penalty_val = torch.where(violations, diff, torch.zeros_like(diff))
+    
+    # Sum squared differences
+    raw_penalty = torch.sum(torch.square(penalty_val), dim=-1)
+
+    # Compress to [0, 1] range smoothly using tanh
+    # Because we want to penalize heavily as it grows, but saturate at 1.0.
+    return torch.tanh(raw_penalty)
+
+
 def reward_palm_down(env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize if the palm Y-axis is pointing upwards (Z > threshold).
 
@@ -312,7 +406,7 @@ def reward_palm_down(env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneE
     world_y = math_utils.quat_rotate(palm_quat, local_y)
     
     # Check the Z component of this world vector
-    # If world_y.z > threshold (e.g. 0.0), it means it's pointing somewhat up
+    # If world_y.z > threshold (e.g. 0.0), it means it's pointing up
     # We want to penalize this.
     # Reward = 0.0 if z > threshold (bad), 1.0 if z <= threshold (good)
     # OR continuous penalty based on Z value
@@ -417,3 +511,124 @@ def orientation_command_error_tanh(
     quat_distance = math_utils.quat_error_magnitude(object.data.root_quat_w, des_quat_w)
 
     return (1 - torch.tanh(quat_distance / std)) * contacts(env, 1.0).float()
+
+def reward_hand_above_object(
+    env: ManagerBasedRLEnv,
+    threshold: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+) -> torch.Tensor:
+    """Reward for keeping the hand (grasp_center and specified links) above the object.
+
+    This reward encourages the specified hand links to have a Z position greater than the object's Z position.
+    """
+    # Extract the robot and object states
+    robot = env.scene[asset_cfg.name]
+    object = env.scene[object_cfg.name]
+
+    # Links to check: grasp_center, Empty_Link2, Empty_Link3
+    # Note: These names must match the link names in the robot's USD.
+    # If using regex or full paths in asset_cfg, ensure they resolve correctly here.
+    # Here we perform a dynamic lookup based on the link names provided in asset_cfg.body_names
+    # We assume asset_cfg.body_names contains ["grasp_center", "Empty_Link2", "Empty_Link3"] or similar.
+    
+    # Get positions of the tracked hand links
+    # shape: (num_envs, num_tracked_links, 3)
+    hand_links_pos = robot.data.body_pos_w[:, asset_cfg.body_ids]
+    
+    # Get position of the object (root)
+    # shape: (num_envs, 3)
+    object_pos = object.data.root_pos_w
+    
+    # We want hand Z > object Z + threshold (optional buffer)
+    # Calculate Z difference: (hand_z - object_z)
+    # shape: (num_envs, num_tracked_links)
+    z_diff = hand_links_pos[..., 2] - object_pos[:, 2].unsqueeze(1)
+    
+    # Reward logic:
+    # 1. If z_diff < 0 (Hand is below object):
+    #    We want to penalize this or encourage moving up.
+    #    Strictly no positive reward for being below.
+    #    We give a linear penalty (negative reward) to guide it upwards.
+    
+    # 2. If z_diff >= 0 (Hand is above or at object level):
+    #    We want reward to be higher when closer (smaller z_diff).
+    #    Reward = 1.0 - tanh(z_diff / std)
+    
+    # Implementation using torch.where to sharply switch logic.
+    
+    reward = torch.where(
+        z_diff >= 0,
+        1.0 - torch.tanh(z_diff / 0.2),  # Above: Reward closeness (Valid Range)
+        (z_diff * 1.0).clamp(min=-1.0)   # Below: Linear Penalty (Invalid Range)
+    )
+
+    return reward.mean(dim=-1)
+
+def contact_bonus_scored(env: ManagerBasedRLEnv, threshold: float) -> torch.Tensor:
+    """Score contacts with preference for fingertips.
+
+    Gives a score for each finger:
+    - 1.0 if fingertip is in contact.
+    - 0.25 if only the link is in contact (and not the tip).
+    - 0.0 otherwise.
+
+    Returns the average score across fingers.
+    """
+    # 1. Get sensors
+    thumb_tip = env.scene.sensors["thumb_tip_object_s"]
+    index_tip = env.scene.sensors["index_tip_object_s"]
+    middle_tip = env.scene.sensors["middle_tip_object_s"]
+    thumb_link = env.scene.sensors["Empty_Link1_2_object_s"]
+    index_link = env.scene.sensors["Empty_Link2_object_s"]
+    middle_link = env.scene.sensors["Empty_Link3_object_s"]
+
+    # 2. Get magnitudes
+    def get_mag(sensor):
+        return torch.norm(sensor.data.force_matrix_w.view(env.num_envs, 3), dim=-1)
+
+    t_tip_mag = get_mag(thumb_tip)
+    i_tip_mag = get_mag(index_tip)
+    m_tip_mag = get_mag(middle_tip)
+    t_link_mag = get_mag(thumb_link)
+    i_link_mag = get_mag(index_link)
+    m_link_mag = get_mag(middle_link)
+
+    # 3. Calculate score per finger
+    # Contact Tip: Score 1.0
+    # Contact Link (No Tip): Score 0.25 (Partial credit)
+    # No Contact: Score 0.0
+    def get_finger_score(tip_mag, link_mag):
+        # Tip contact: 1.0
+        # Link contact: 0.5
+        # If both: 1.5 (Bonus for using full finger/wrapping)
+        return torch.where(tip_mag > threshold, 1.0, 0.0) + torch.where(link_mag > threshold, 1.0, 0.0)
+
+    s_thumb = get_finger_score(t_tip_mag, t_link_mag)
+    s_index = get_finger_score(i_tip_mag, i_link_mag)
+    s_middle = get_finger_score(m_tip_mag, m_link_mag)
+
+    # 4. Combine
+    # Strict requirement: All fingers must have at least some contact to get ANY score.
+    # We use torch.where because we are operating on tensors (batches of environments).
+    # Python's `if` does not work on tensors.
+
+    all_contact = (s_thumb > 0) & ((s_index > 0) | (s_middle > 0))
+    avg_score = ( s_thumb +  s_index +  s_middle) / 3.0
+    
+    return torch.where(all_contact, avg_score, torch.zeros_like(avg_score))
+
+
+def position_command_error_tanh_bouns(
+    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg, align_asset_cfg: SceneEntityCfg
+) -> torch.Tensor:
+    """Reward tracking of commanded position using tanh kernel, gated by contact presence."""
+
+    asset: RigidObject = env.scene[asset_cfg.name]
+    object: RigidObject = env.scene[align_asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    # obtain the desired and current positions
+    des_pos_b = command[:, :3]
+    des_pos_w, _ = combine_frame_transforms(asset.data.root_pos_w, asset.data.root_quat_w, des_pos_b)
+    distance = torch.norm(object.data.root_pos_w - des_pos_w, dim=1)
+    return (1 - torch.tanh(distance / std)) * contact_bonus_scored(env, 1.0).float()

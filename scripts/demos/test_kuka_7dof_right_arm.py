@@ -103,15 +103,12 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
     
     kuka_robot = entities["kuka_self"]
     
-    # Get indices for finger joints to drive them specifically
-    # Based on the config, finger joints usually start with 'finger_joint'
-    # We will find them dynamically
+    # Get indices for all joints to drive them
     joint_names = kuka_robot.data.joint_names
-    # Update filter to include new joint names (index, middle, thumb) as well as legacy 'finger'
-    finger_keywords = ["finger", "index", "middle", "thumb"]
-    finger_joint_indices = [i for i, name in enumerate(joint_names) if any(sub in name for sub in finger_keywords)]
-    print(f"[INFO]: Finger joint indices: {finger_joint_indices}")
-    print(f"[INFO]: Finger joint names: {[joint_names[i] for i in finger_joint_indices]}")
+    # Select all joints
+    joint_indices = [i for i in range(len(joint_names))]
+    print(f"[INFO]: Driving all joints: {joint_indices}")
+    print(f"[INFO]: Joint names: {joint_names}")
 
     # Simulate physics
     while simulation_app.is_running():
@@ -136,14 +133,14 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
 
         # Drive finger joints with a large sine wave movement
         # Frequency 0.5 Hz, Amplitude 0.3 rad
-        sine_wave = 0.3 * np.sin(2 * np.pi * 0.5 * sim_time)
+        sine_wave = 0.5 * np.sin(2 * np.pi * 0.5 * sim_time)
         
         # We want to move fingers from 0 to some positive/negative value
         # Let's target the default position + offset
         current_target = kuka_robot.data.default_joint_pos.clone()
         
-        # Apply movement to finger joints only
-        for joint_idx in finger_joint_indices:
+        # Apply movement to all joints
+        for joint_idx in joint_indices:
              current_target[:, joint_idx] += sine_wave
 
         # Clamp to limits
